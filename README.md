@@ -40,6 +40,12 @@ CodePair is a comprehensive coding interview platform that bridges the gap betwe
 - Structured feedback collection
 - Interview recording and playback
 
+### 🐳 **Containerized Deployment**
+- **Docker containerization** for consistent deployments
+- **Nginx reverse proxy** for load balancing and SSL termination
+- **Docker Compose** for easy multi-service orchestration
+- **Production-ready** container configuration
+
 ## 🛠️ Tech Stack
 
 ### Frontend
@@ -64,14 +70,20 @@ CodePair is a comprehensive coding interview platform that bridges the gap betwe
 - **Role-based Access Control** - Secure permissions
 - **Data Encryption** - End-to-end security
 
+### Infrastructure & Deployment
+- **Docker** - Containerization platform
+- **Nginx** - Reverse proxy and load balancer
+- **Docker Compose** - Multi-container orchestration
+- **SSL/TLS** - Secure communications
+
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 18+ 
-- npm or yarn
+- Docker & Docker Compose
 - ConvexDB account
 
-### Installation
+### Local Development
 
 1. **Clone the repository**
    ```bash
@@ -110,6 +122,71 @@ CodePair is a comprehensive coding interview platform that bridges the gap betwe
 6. **Open your browser**
    Navigate to `http://localhost:3000`
 
+### 🐳 Docker Deployment
+
+#### Quick Start with Docker Compose
+
+1. **Clone and configure**
+   ```bash
+   git clone https://github.com/Varun5711/codepair.git
+   cd codepair
+   cp .env.example .env.production
+   # Edit .env.production with your configuration
+   ```
+
+2. **Build and run with Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Access the application**
+   - Application: `http://localhost:3000`
+   - Nginx proxy: `http://localhost` (port 80)
+
+#### Manual Docker Setup
+
+1. **Build the Docker image**
+   ```bash
+   docker build -t codepair-app .
+   ```
+
+2. **Run the application container**
+   ```bash
+   docker run -d \
+     --name codepair-app \
+     -p 3000:3000 \
+     --env-file .env.production \
+     codepair-app
+   ```
+
+3. **Run Nginx reverse proxy**
+   ```bash
+   docker run -d \
+     --name nginx-proxy \
+     -p 80:80 \
+     -p 443:443 \
+     --link codepair-app:app \
+     -v ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+     nginx:alpine
+   ```
+
+#### Docker Hub Deployment
+
+Pull and run the pre-built image:
+
+```bash
+# Pull the latest image
+docker pull varun5711/codepair-app:latest
+
+# Run with environment variables
+docker run -d \
+  --name codepair \
+  -p 3000:3000 \
+  -e CONVEX_DEPLOYMENT=your-deployment \
+  -e NEXT_PUBLIC_CONVEX_URL=your-convex-url \
+  varun5711/codepair-app:latest
+```
+
 ## 📁 Project Structure
 
 ```
@@ -131,7 +208,12 @@ codepair/
 ├── lib/                  # Utility functions
 ├── hooks/                # Custom React hooks
 ├── types/                # TypeScript definitions
-└── public/               # Static assets
+├── public/               # Static assets
+├── docker-compose.yml    # Multi-service configuration
+├── Dockerfile           # Container build instructions
+├── nginx/               # Nginx configuration
+│   └── nginx.conf       # Reverse proxy settings
+└── .dockerignore        # Docker ignore patterns
 ```
 
 ## 🎯 Key Features Deep Dive
@@ -145,6 +227,26 @@ CodePair leverages ConvexDB's reactive database capabilities to provide real-tim
 - **Server Functions**: Edge-optimized backend logic with JavaScript/TypeScript
 - **Built-in File Storage**: Handle resume uploads and interview recordings
 - **Vector Search**: Advanced search capabilities for candidate profiles
+
+### Docker Architecture
+
+The application is containerized for consistent deployment across environments:
+
+- **Application Container**: Next.js app running on Node.js
+- **Nginx Container**: Reverse proxy for load balancing and SSL termination
+- **Multi-stage Build**: Optimized image size with production builds
+- **Health Checks**: Container health monitoring
+- **Volume Mounting**: Persistent data and configuration management
+
+### Nginx Configuration
+
+The Nginx reverse proxy provides:
+
+- **Load Balancing**: Distribute traffic across multiple app instances
+- **SSL Termination**: Handle HTTPS certificates and encryption
+- **Static Asset Serving**: Efficient delivery of CSS, JS, and media files
+- **Request Routing**: Route API calls and static content appropriately
+- **Security Headers**: Enhanced security with proper HTTP headers
 
 ### Interview Flow
 
@@ -177,6 +279,63 @@ CodePair leverages ConvexDB's reactive database capabilities to provide real-tim
 
 ## 🔧 Configuration
 
+### Docker Environment Variables
+
+Create a `.env.production` file for Docker deployment:
+
+```env
+# Application
+NODE_ENV=production
+PORT=3000
+
+# ConvexDB
+CONVEX_DEPLOYMENT=your-deployment-url
+NEXT_PUBLIC_CONVEX_URL=your-convex-url
+
+# Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your-clerk-key
+CLERK_SECRET_KEY=your-clerk-secret
+
+# Security
+JWT_SECRET=your-jwt-secret
+SESSION_SECRET=your-session-secret
+```
+
+### Nginx Configuration
+
+Basic `nginx/nginx.conf` for reverse proxy:
+
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream app {
+        server app:3000;
+    }
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        location / {
+            proxy_pass http://app;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/ {
+            proxy_pass http://app;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
+}
+```
+
 ### ConvexDB Schema
 The database schema includes tables for:
 - Users (candidates, interviewers, admins)
@@ -184,38 +343,46 @@ The database schema includes tables for:
 - Assessments (evaluations, scores, feedback)
 - Organizations (company settings, branding)
 
-### Authentication Setup
-Configure authentication providers in `convex/auth.config.js`:
-```javascript
-export default {
-  providers: [
-    {
-      domain: "your-domain.clerk.accounts.dev",
-      applicationID: "convex",
-    },
-  ],
-};
-```
+## 🚢 Deployment Options
 
-## 🚢 Deployment
+### Production Deployment with Docker
 
-### Production Build
-```bash
-npm run build
-npm start
-```
+1. **Using Docker Compose (Recommended)**
+   ```bash
+   # Production deployment
+   docker-compose -f docker-compose.prod.yml up -d
+   
+   # Scale the application
+   docker-compose -f docker-compose.prod.yml up -d --scale app=3
+   ```
+
+2. **Manual Production Setup**
+   ```bash
+   # Build production image
+   docker build -t codepair-app:prod --target production .
+   
+   # Run with production settings
+   docker run -d \
+     --name codepair-prod \
+     --restart unless-stopped \
+     -p 3000:3000 \
+     --env-file .env.production \
+     codepair-app:prod
+   ```
+
+### Cloud Deployment
+
+The containerized setup supports deployment on:
+- **AWS ECS/Fargate**
+- **Google Cloud Run**
+- **Azure Container Instances**
+- **DigitalOcean App Platform**
+- **Kubernetes clusters**
 
 ### ConvexDB Deployment
 ```bash
-npx convex deploy
+npx convex deploy --prod
 ```
-
-### Environment Variables (Production)
-Ensure all environment variables are set in your hosting platform:
-- `CONVEX_DEPLOYMENT`
-- `NEXT_PUBLIC_CONVEX_URL`
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
 
 ## 📈 Performance & Scalability
 
@@ -225,6 +392,8 @@ CodePair is built for scale with:
 - **Optimistic Updates**: Instant UI responsiveness
 - **CDN Integration**: Fast asset delivery
 - **Auto-scaling**: Handles traffic spikes automatically
+- **Container Orchestration**: Horizontal scaling with Docker Swarm or Kubernetes
+- **Load Balancing**: Nginx distributes traffic efficiently
 
 ## 🤝 Contributing
 
@@ -253,6 +422,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Next.js](https://nextjs.org) for the React framework
 - [Tailwind CSS](https://tailwindcss.com) for styling
 - [Clerk](https://clerk.dev) for authentication
+- [Docker](https://docker.com) for containerization
+- [Nginx](https://nginx.org) for reverse proxy capabilities
 - Open source community for inspiration and contributions
 
 ---
@@ -260,3 +431,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Built with ❤️ by the CodePair Team**
 
 *Transform your technical hiring process with CodePair - where great interviews happen.*
+
+### Quick Deploy Commands
+
+```bash
+# Clone and deploy in one go
+git clone https://github.com/Varun5711/codepair.git && cd codepair
+cp .env.example .env.production
+# Edit .env.production with your settings
+docker-compose up -d
+
+# Or pull from Docker Hub
+docker pull varun5711/codepair-app:latest
+docker run -d -p 3000:3000 --name codepair varun5711/codepair-app:latest
+```
