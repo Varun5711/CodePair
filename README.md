@@ -4,11 +4,9 @@
 
 CodePair is a comprehensive coding interview platform that bridges the gap between interviewers and candidates through seamless real-time video calling, collaborative coding environments, and intelligent assessment tools. Built with cutting-edge technologies, it provides a professional interview experience that scales.
 
-![CodePair Banner](https://via.placeholder.com/800x300/1a1a2e/16213e?text=CodePair+-+Coding+Interview+Platform)
-
 ## ✨ Features
 
-### 🎥 **Real-time Video Calling**
+### 🎥 **Real-time Video Calling and Code Editor**
 - High-quality video and audio communication
 - Screen sharing capabilities
 - Instant connection with no setup required
