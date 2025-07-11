@@ -5,60 +5,61 @@ pipeline {
     stages {
         stage("Code Cloning") {
             steps {
-                script {
-                    cloningCode("https://github.com/Varun5711/CodePair", "main")
-                }
+                git url: "https://github.com/Varun5711/CodePair", branch: "main"
             }
         }
 
         stage("Setup .env.local") {
             steps {
-                script {
-                    generateEnvFile(
-                        credentials: [
-                            string(credentialsId: 'convex_deployment', variable: 'CONVEX_DEPLOYMENT'),
-                            string(credentialsId: 'next_public_clerk_key', variable: 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY'),
-                            string(credentialsId: 'clerk_secret_key', variable: 'CLERK_SECRET_KEY'),
-                            string(credentialsId: 'next_convex_key', variable: 'NEXT_PUBLIC_CONVEX_URL'),
-                            string(credentialsId: 'next_stream_key', variable: 'NEXT_PUBLIC_STREAM_API_KEY'),
-                            string(credentialsId: 'steam_key', variable: 'STREAM_SECRET_KEY')
-                        ],
-                        workDir: '/home/agentjenkins/jenkins/workspace/CodePairPipeline',
-                        envFilePath: '.env.local'
-                    )
+                withCredentials([
+                    string(credentialsId: 'convex_deployment', variable: 'CONVEX_DEPLOYMENT'),
+                    string(credentialsId: 'next_public_clerk_key', variable: 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY'),
+                    string(credentialsId: 'clerk_secret_key', variable: 'CLERK_SECRET_KEY'),
+                    string(credentialsId: 'next_convex_key', variable: 'NEXT_PUBLIC_CONVEX_URL'),
+                    string(credentialsId: 'next_stream_key', variable: 'NEXT_PUBLIC_STREAM_API_KEY'),
+                    string(credentialsId: 'steam_key', variable: 'STREAM_SECRET_KEY')
+                ]) {
+                    sh '''
+                        cd /home/agentjenkins/jenkins/workspace/CodePairPipeline
+                        [ -f .env.example ] && rm .env.example
+                        cat <<EOF > .env.local
+CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT}
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
+NEXT_PUBLIC_STREAM_API_KEY=${NEXT_PUBLIC_STREAM_API_KEY}
+STREAM_SECRET_KEY=${STREAM_SECRET_KEY}
+EOF
+                    '''
                 }
             }
         }
 
         stage("Build") {
             steps {
-                script {
-                    dockerBuild(
-                        image: 'codepair:latest',
-                        context: '.',
-                        noCache: true
-                    )
-                }
+                sh "docker build -t codepair:latest ."
             }
         }
 
         stage("Push To Docker Hub") {
             steps {
-                script {
-                    pushToDockerHub(
-                        image: 'codepair:latest',
-                        credentialsId: 'docker-hub-credentials',
-                        localTag: 'codepair:latest'
-                    )
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-credentials',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+                    sh '''
+                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                        docker tag codepair:latest $DOCKER_USERNAME/codepair:latest
+                        docker push $DOCKER_USERNAME/codepair:latest
+                    '''
                 }
             }
         }
 
         stage("Deploy") {
             steps {
-                script {
-                    deployCode()
-                }
+                sh "docker compose up -d"
             }
         }
     }
