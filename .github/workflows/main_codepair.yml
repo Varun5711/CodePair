@@ -27,6 +27,7 @@ jobs:
           echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> .env.local
           echo "NEXT_PUBLIC_STREAM_API_KEY=${{ secrets.NEXT_PUBLIC_STREAM_API_KEY }}" >> .env.local
           echo "STREAM_SECRET_KEY=${{ secrets.STREAM_SECRET_KEY }}" >> .env.local
+          echo "REDIS_URL=${{ secrets.REDIS_URL }}" >> .env.local
 
       - name: npm install, build, and test
         run: |
