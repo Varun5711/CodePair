@@ -1,4 +1,3 @@
-@Library("jenkins-shared-library") _
 pipeline {
     agent { label 'agentjnlp' }
 
