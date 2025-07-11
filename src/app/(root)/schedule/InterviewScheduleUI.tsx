@@ -37,8 +37,8 @@ function InterviewScheduleUI() {
   const users = useQuery(api.users.getUsers) ?? [];
   const createInterview = useMutation(api.interviews.createInterview);
 
-  const candidates = users?.filter((u) => u.role === "candidate");
-  const interviewers = users?.filter((u) => u.role === "interviewer");
+  const candidates = users?.filter((u:any) => u.role === "candidate");
+  const interviewers = users?.filter((u:any) => u.role === "interviewer");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -123,12 +123,12 @@ function InterviewScheduleUI() {
     }));
   };
 
-  const selectedInterviewers = interviewers.filter((i) =>
+  const selectedInterviewers = interviewers.filter((i:any) =>
     formData.interviewerIds.includes(i.clerkId)
   );
 
   const availableInterviewers = interviewers.filter(
-    (i) => !formData.interviewerIds.includes(i.clerkId)
+    (i:any) => !formData.interviewerIds.includes(i.clerkId)
   );
 
   return (
@@ -184,7 +184,7 @@ function InterviewScheduleUI() {
                     <SelectValue placeholder="Select candidate" />
                   </SelectTrigger>
                   <SelectContent>
-                    {candidates.map((candidate) => (
+                    {candidates.map((candidate:any) => (
                       <SelectItem key={candidate.clerkId} value={candidate.clerkId}>
                         <UserInfo user={candidate} />
                       </SelectItem>
@@ -197,7 +197,7 @@ function InterviewScheduleUI() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Interviewers</label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {selectedInterviewers.map((interviewer) => (
+                  {selectedInterviewers.map((interviewer:any) => (
                     <div
                       key={interviewer.clerkId}
                       className="inline-flex items-center gap-2 bg-secondary px-2 py-1 rounded-md text-sm"
@@ -220,7 +220,7 @@ function InterviewScheduleUI() {
                       <SelectValue placeholder="Add interviewer" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableInterviewers.map((interviewer) => (
+                      {availableInterviewers.map((interviewer:any) => (
                         <SelectItem key={interviewer.clerkId} value={interviewer.clerkId}>
                           <UserInfo user={interviewer} />
                         </SelectItem>
@@ -295,7 +295,7 @@ function InterviewScheduleUI() {
       ) : interviews.length > 0 ? (
         <div className="spacey-4">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {interviews.map((interview) => (
+            {interviews.map((interview:any) => (
               <MeetingCard key={interview._id} interview={interview} />
             ))}
           </div>

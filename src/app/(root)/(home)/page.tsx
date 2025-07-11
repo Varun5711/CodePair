@@ -399,7 +399,7 @@ export default function Home() {
                             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
                               {
                                 interviews.filter(
-                                  (i) => new Date(i._creationTime) > new Date()
+                                  (i:any) => new Date(i._creationTime) > new Date()
                                 ).length
                               }
                             </p>
@@ -429,7 +429,7 @@ export default function Home() {
 
                     {/* Interviews grid */}
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                      {interviews.map((interview, index) => (
+                      {interviews.map((interview:any, index:any) => (
                         <div
                           key={interview._id}
                           className="transform transition-all duration-300 hover:scale-105"

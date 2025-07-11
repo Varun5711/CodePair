@@ -91,7 +91,7 @@ function CommentDialog({ interviewId }: { interviewId: Id<"interviews"> }) {
               {/* DISPLAY EXISTING COMMENTS */}
               <ScrollArea className="h-[240px]">
                 <div className="space-y-4">
-                  {existingComments.map((comment, index) => {
+                  {existingComments.map((comment:any, index:any) => {
                     const interviewer = getInterviewerInfo(users, comment.interviewerId);
                     return (
                       <div key={index} className="rounded-lg border p-4 space-y-3">

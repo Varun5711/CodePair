@@ -1,14 +1,23 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { redis } from "../src/lib/redis";
 
 export const getAllInterviews = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
-    const interviews = await ctx.db.query("interviews").collect();
+    const cacheKey = `interviews:user:${identity.subject}`;
+    const cached = await redis.get(cacheKey);
 
-    return interviews;
+    if (cached) {
+      return JSON.parse(cached);
+    }
+    const getAllInterviewQuery = await ctx.db.query("interviews").collect();
+
+    await redis.set(cacheKey, JSON.stringify(getAllInterviewQuery), "EX", 3600);
+
+    return getAllInterviewQuery;
   },
 });
 
@@ -17,23 +26,49 @@ export const getMyInterviews = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return [];
 
-    const interviews = await ctx.db
+    const cachekey = `interviews:user:${identity.subject}`;
+    const cached = await redis.get(cachekey);
+
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const getMyInterviewsQuery = await ctx.db
       .query("interviews")
-      .withIndex("by_candidate_id", (q) => q.eq("candidateId", identity.subject))
+      .withIndex("by_candidate_id", (q) =>
+        q.eq("candidateId", identity.subject)
+      )
       .collect();
 
-    return interviews!;
+    await redis.set(cachekey, JSON.stringify(getMyInterviewsQuery), "EX", 3600);
+
+    return getMyInterviewsQuery!;
   },
 });
 
 export const getInterviewByStreamCallId = query({
   args: { streamCallId: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+
+    const cacheKey = `interview:streamCallId:${args.streamCallId}`;
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    const getInterviewByStreamCallIdQuery = await ctx.db
       .query("interviews")
-      .withIndex("by_stream_call_id", (q) => q.eq("streamCallId", args.streamCallId))
+      .withIndex("by_stream_call_id", (q) =>
+        q.eq("streamCallId", args.streamCallId)
+      )
       .first();
+
+    await redis.set(cacheKey, JSON.stringify(getInterviewByStreamCallIdQuery), "EX", 3600);
+
+    return getInterviewByStreamCallIdQuery!;
   },
+
+    
 });
 
 export const createInterview = mutation({
@@ -62,9 +97,15 @@ export const updateInterviewStatus = mutation({
     status: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.patch(args.id, {
+
+    const cacheKey = `interview:${args.id}`;
+    await redis.del(cacheKey);
+
+    const updateInterviewStatusQuery = await ctx.db.patch(args.id, {
       status: args.status,
       ...(args.status === "completed" ? { endTime: Date.now() } : {}),
     });
+
+    return updateInterviewStatusQuery!;
   },
 });
